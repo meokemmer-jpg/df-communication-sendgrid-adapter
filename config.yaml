@@ -1,159 +1,148 @@
-# DF-COMMUNICATION-SENDGRID-ADAPTER Configuration [CRUX-MK]
-# Welle-53 Real-API-Wave-1 Top-5-Priority Foundation-DF
-# SendGrid Transactional Email API Adapter
-
 df_id: DF-COMMUNICATION-SENDGRID-ADAPTER
 df_name: communication-sendgrid-adapter
 version: 0.1.0-SKELETON
 status: SKELETON-CONDITIONAL
 crux-mk: true
+description: 'Real-API-Adapter fuer SendGrid Transactional Email API.
 
-description: |
-  Real-API-Adapter fuer SendGrid Transactional Email API.
   Pro Communication-Operation: POST /v3/mail/send (mit Template-Support).
+
   ENV-Var-Gated Default-Disabled. KEIN Live-Send ohne PHRONESIS_TICKET.
+
   Free-Tier: 100 emails/day.
 
-# === Default-Action (per ausreden-schutz.md Schicht 2) ===
-
+  '
 default_action:
-  description: "SendGrid Transactional-Email mit Tenant-Isolation + Template-Support"
+  description: SendGrid Transactional-Email mit Tenant-Isolation + Template-Support
   rho_per_run_eur: 60
   rho_validation_source: unvalidated
   block_gates:
-    - gate_id: K13_PAV
-      block_reason: "Q_0-Naehe: Gast-Email-Pipeline, PHRONESIS_TICKET Live-Mode Pflicht"
-      false_block_cost_eur: 50
-      legitimate_block_condition: "Live-Mode UND PHRONESIS_TICKET fehlt"
-    - gate_id: K11
-      block_reason: "Cross-Hotel-Send verboten ohne Tenant-Isolation"
-      false_block_cost_eur: 100
-      legitimate_block_condition: "Tenant-Context (hotel_id) fehlt"
-  graceful_degradation_path: "Mock-Email mit standard-Message-ID + status=queued"
-
-# === Tier-2 Pflicht-Check ===
-
+  - gate_id: K13_PAV
+    block_reason: 'Q_0-Naehe: Gast-Email-Pipeline, PHRONESIS_TICKET Live-Mode Pflicht'
+    false_block_cost_eur: 50
+    legitimate_block_condition: Live-Mode UND PHRONESIS_TICKET fehlt
+  - gate_id: K11
+    block_reason: Cross-Hotel-Send verboten ohne Tenant-Isolation
+    false_block_cost_eur: 100
+    legitimate_block_condition: Tenant-Context (hotel_id) fehlt
+  graceful_degradation_path: Mock-Email mit standard-Message-ID + status=queued
 tier_2_check:
-  lambda_per_month_estimate: 1000  # ~33/Tag (Booking-Confirmation + Pre-Stay + Post-Stay)
-  narrow_scope: "SendGrid Mail-Send API (Transactional + Templates)"
+  lambda_per_month_estimate: 1000
+  narrow_scope: SendGrid Mail-Send API (Transactional + Templates)
   determinism: 0.92
   rollback_seconds: 30
   test_coverage_target: 0.85
-  k0_protected: false  # Send-only, kein K_0
+  k0_protected: false
   q0_measurable: true
   escalation_after_n_fails: 3
   rho_budget_eur_day: 2
   audit_trail: branch-hub/audit/df-communication-sendgrid-adapter.jsonl
-
-# === K11-K16 ===
-
 k11_cascade_containment:
   cascade_isolation: hard
   failure_blast_radius: 1
-  dependency_dlq_strategy: "skip-email-resume-naechste + DLQ-jsonl + bounce-handling"
-
+  dependency_dlq_strategy: skip-email-resume-naechste + DLQ-jsonl + bounce-handling
 k12_distillation_resistenz:
   output_feeds_into_training: false
   provenance_required_in_output: true
-  non_llm_validation_layer: "RFC5322-Email-Format-Check + Subject-Length-Limit (255) + HTML-Body-Size-Limit (1MB)"
-
+  non_llm_validation_layer: RFC5322-Email-Format-Check + Subject-Length-Limit (255)
+    + HTML-Body-Size-Limit (1MB)
 k13_independent_ground_truth:
-  external_anchor_type: "sendgrid_api + github_api"
-  external_anchor_validation_frequency: "weekly (SendGrid-Account-Health + Sender-Verification)"
+  external_anchor_type: sendgrid_api + github_api
+  external_anchor_validation_frequency: weekly (SendGrid-Account-Health + Sender-Verification)
   pre_action_domain_check:
-    env_tag: "test|live via SENDGRID_API_KEY-Praefix (SG.test_ vs SG.*)"
-    mount_point: "branch-hub/communication/sendgrid/hotels/"
-    network_region: "global"
+    env_tag: test|live via SENDGRID_API_KEY-Praefix (SG.test_ vs SG.*)
+    mount_point: branch-hub/communication/sendgrid/hotels/
+    network_region: global
   pre_action_backup_check:
-    backup_status: "Outbound Idempotency-Keys persistent + Bounce-State"
-    replication_lag: "n/a"
+    backup_status: Outbound Idempotency-Keys persistent + Bounce-State
+    replication_lag: n/a
   pre_action_blast_radius_check:
-    blast_radius: "max 1 Email pro Run + Rate-Limit 10/sec pro Hotel"
-    reversibility_class: "non-reversible (Send-Only)"
-
+    blast_radius: max 1 Email pro Run + Rate-Limit 10/sec pro Hotel
+    reversibility_class: non-reversible (Send-Only)
 k14_human_override_decay:
   override_complexity: requires_specialist
   override_documentation_freshness_days: 7
   martin_review_cadence: pro Live-Mode-Aktivierung
   bus_factor_handover_drilled: false
-
 k15_entropy_budget:
   entropy_added_loc_estimate: 270
   entropy_added_concepts:
-    - SendGridAdapter
-    - EmailRequest
-    - EmailValidator
-    - TemplateSubstitutor
-  entropy_justified_by_rho: "Email-Pipeline rho 60k/J (Booking-Confirmation + Pre-Stay + Post-Stay-Review)"
-  entropy_subtractive_potential: "ersetzt manuelle Hotel-Front-Desk-Emails"
-
+  - SendGridAdapter
+  - EmailRequest
+  - EmailValidator
+  - TemplateSubstitutor
+  entropy_justified_by_rho: Email-Pipeline rho 60k/J (Booking-Confirmation + Pre-Stay
+    + Post-Stay-Review)
+  entropy_subtractive_potential: ersetzt manuelle Hotel-Front-Desk-Emails
 k16_concurrent_spawn_mutex:
   concurrent_spawn_protection: both
   lock_dir: /tmp/df-communication-sendgrid-adapter.lock
   lock_stale_age_h: 6
   engine_pgrep_check: true
   lock_release_on: EXIT_INT_TERM
-
-# === LC1-LC5 ===
-
 lose_coupling:
   LC1_graceful_degradation:
     degradation_modes:
-      - full              # SendGrid live
-      - degraded_no_template # Template-API down, Plain-Text-Fallback
-      - degraded_test_mode # nur Sandbox-Mode (SendGrid sandbox=true)
-      - standalone        # Mock-Adapter
+    - full
+    - degraded_no_template
+    - degraded_test_mode
+    - standalone
     degradation_test_required: true
-
   LC2_direct_mode:
     direct_mode_available: true
     direct_mode_capability: 0.85
-    direct_mode_trigger: "SendGrid-API-Timeout >30s oder 429-Rate-Limit"
-
+    direct_mode_trigger: SendGrid-API-Timeout >30s oder 429-Rate-Limit
   LC3_circuit_breaker:
     circuit_breaker_timeout_s: 30
     circuit_breaker_open_threshold: 3
     circuit_breaker_half_open_test_interval_s: 300
-
   LC4_failure_isolation:
     state_externalization: true
     idempotent_operations: true
     dependency_dlq_separate: true
-
   LC5_health_check:
     health_check_dependencies: []
     health_check_degraded_score: 0.7
     health_check_endpoint_or_file: /tmp/df-communication-sendgrid-adapter-health.json
-
-# === ENV-Var-Gated Real-Integration ===
-
 env_var_gating:
-  DF_SENDGRID_REAL_ENABLED: false  # Default Mock
-  PHRONESIS_TICKET_REQUIRED: true  # Live-Mode Pflicht
+  DF_SENDGRID_REAL_ENABLED: false
+  PHRONESIS_TICKET_REQUIRED: true
   default_mode: mock
-
-# === Operatives ===
-
 operations:
   output_path: ~/Projects/dark-factories/df-communication-sendgrid-adapter/
   state_file: ~/.df-communication-sendgrid-adapter/state.json
   jsonl_audit_path: branch-hub/audit/df-communication-sendgrid-adapter.jsonl
   stop_flag_path: /tmp/df-communication-sendgrid-adapter.stop
   health_file_path: /tmp/df-communication-sendgrid-adapter-health.json
-  schedule: "On-demand (per Booking-Event + Cadence-Trigger)"
-
-# === rho-Schaetzung ===
-
+  schedule: On-demand (per Booking-Event + Cadence-Trigger)
 rho_estimate:
   annual_eur: 60000
-  reason: "Booking-Confirmation + Pre-Stay + Post-Stay Review-Request via Email"
+  reason: Booking-Confirmation + Pre-Stay + Post-Stay Review-Request via Email
   schwer_quantifizierbar: false
   rho_validation_source: unvalidated
-
-# === CRUX-Bindung ===
-
 crux_bindung:
-  K_0: "indirekt (Review-Request-Pipeline -> Direct-Booking-Lift)"
-  Q_0: "Gast-Privacy-Schutz (RFC5322-Validation + Tenant-Isolation + Bounce-Handling)"
-  I_min: "strukturierte SendGrid-Pipeline (270 LOC + Tests)"
-  W_0: "Hotel-Front-Desk-Email-Zeit reduziert"
+  K_0: indirekt (Review-Request-Pipeline -> Direct-Booking-Lift)
+  Q_0: Gast-Privacy-Schutz (RFC5322-Validation + Tenant-Isolation + Bounce-Handling)
+  I_min: strukturierte SendGrid-Pipeline (270 LOC + Tests)
+  W_0: Hotel-Front-Desk-Email-Zeit reduziert
+activation_gates:
+  internal_real_mode:
+    env_var: DF-COMMUNICATION-SENDGRID-ADAPTER_INTERNAL_REAL_ENABLED
+    default: false
+    description: Echte Daten-Verarbeitung lokal/sandbox, KEIN External-Output
+  external_real_mode:
+    env_var: DF-COMMUNICATION-SENDGRID-ADAPTER_REAL_ENABLED
+    default: false
+    description: Real-Mode mit External-Output (Phronesis-Sign-Off Pflicht)
+    requires:
+      phronesis_ticket_env: PHRONESIS_TICKET
+      signoff_id_env: OPERATOR_SIGNOFF_ID
+  external_output_gate:
+    env_var_signoff_id: OPERATOR_SIGNOFF_ID
+    default: BLOCKED
+    description: Mechanischer Block fuer External-Communication ohne Sign-Off
+output_pipe_block:
+- external_api_call_unverified
+- external_email
+- external_webhook_publish
+- production_db_write_unverified
