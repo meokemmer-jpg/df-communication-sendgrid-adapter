@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 # K16-Trinity-AGGRESSIVE 2026-05-17
 def k16_lock(name):
@@ -31,6 +30,7 @@ Per env-var-gated-real-integration-default.md Pflicht-Tests:
 10. Template-ID Support
 11. Audit-Record-Format
 """
+from __future__ import annotations
 
 import sys
 import pathlib
