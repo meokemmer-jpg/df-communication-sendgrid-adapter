@@ -1,0 +1,12 @@
+{
+  "df": "df-communication-sendgrid-adapter",
+  "ts": "2026-06-08T19:56:02.961311+00:00",
+  "has_src": true,
+  "parse_ok": true,
+  "has_tests": true,
+  "test_ran": true,
+  "tests_passed": true,
+  "code_hash": "91001183a2b9d6b3",
+  "python": "3.14.4",
+  "crux": "[CRUX-MK]"
+}
