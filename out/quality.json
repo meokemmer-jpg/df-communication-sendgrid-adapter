@@ -1,9 +1,9 @@
 {
   "df": "df-communication-sendgrid-adapter",
-  "ts": "2026-07-02T06:12:43.442707+00:00",
+  "ts": "2026-07-03T00:50:09.125456+00:00",
   "maturity": "TESTED",
   "maturity_level": 4,
   "evidence_grade": 4,
-  "wargame_verdict": "CONDITIONAL",
+  "wargame_verdict": null,
   "crux": "[CRUX-MK]"
 }
